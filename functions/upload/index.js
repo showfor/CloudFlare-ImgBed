@@ -99,7 +99,7 @@ async function processFileUpload(context, formdata = null) {
     // 路径安全性处理：防止路径穿越和特殊字符注入
     uploadFolder = sanitizeUploadFolder(uploadFolder);
 
-    let uploadChannel = 'TelegramNew';
+    let uploadChannel = '';
     switch (urlParamUploadChannel) {
         case 'telegram':
             uploadChannel = 'TelegramNew';
@@ -123,7 +123,22 @@ async function processFileUpload(context, formdata = null) {
             uploadChannel = 'External';
             break;
         default:
-            uploadChannel = 'TelegramNew';
+            // 智能选择首个已启用的存储渠道
+            if (context.uploadConfig.webdav?.channels?.length > 0) {
+                uploadChannel = 'WebDAV';
+            } else if (context.uploadConfig.cfr2?.channels?.length > 0) {
+                uploadChannel = 'CloudflareR2';
+            } else if (context.uploadConfig.huggingface?.channels?.length > 0) {
+                uploadChannel = 'HuggingFace';
+            } else if (context.uploadConfig.s3?.channels?.length > 0) {
+                uploadChannel = 'S3';
+            } else if (context.uploadConfig.discord?.channels?.length > 0) {
+                uploadChannel = 'Discord';
+            } else if (context.uploadConfig.telegram?.channels?.length > 0) {
+                uploadChannel = 'TelegramNew';
+            } else {
+                uploadChannel = 'TelegramNew';
+            }
             break;
     }
 

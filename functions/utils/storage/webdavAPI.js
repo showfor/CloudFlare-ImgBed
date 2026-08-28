@@ -52,15 +52,19 @@ export class WebDAVAPI {
         let currentPath = '';
         for (const part of dirParts) {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
-            const response = await fetch(this.buildObjectUrl(currentPath), {
-                method: 'MKCOL',
-                headers: this.getRequestHeaders(),
-                redirect: 'manual',
-            });
+            try {
+                const response = await fetch(this.buildObjectUrl(currentPath), {
+                    method: 'MKCOL',
+                    headers: this.getRequestHeaders(),
+                    redirect: 'follow',
+                });
 
-            // 405 commonly means the collection already exists. Some servers return 200/204.
-            if (![200, 201, 204, 405].includes(response.status)) {
-                throw new Error(`WebDAV MKCOL failed for ${currentPath}: ${response.status} ${response.statusText}`);
+                // 200/201/204 = created, 405 = collection already exists, 301/409/403 = ignore and attempt PUT
+                if (![200, 201, 204, 301, 403, 405, 409].includes(response.status)) {
+                    console.warn(`WebDAV MKCOL returned status for ${currentPath}: ${response.status}`);
+                }
+            } catch (err) {
+                console.warn(`WebDAV MKCOL warning for ${currentPath}:`, err.message);
             }
         }
     }
@@ -68,17 +72,23 @@ export class WebDAVAPI {
     async putFile(path, body, contentType = '') {
         await this.ensureDirectory(path);
 
-        const headers = this.getRequestHeaders(contentType ? { 'Content-Type': contentType } : {});
+        const extraHeaders = {};
+        if (contentType) extraHeaders['Content-Type'] = contentType;
+        if (body && typeof body.size === 'number') {
+            extraHeaders['Content-Length'] = body.size.toString();
+        }
+
+        const headers = this.getRequestHeaders(extraHeaders);
         const response = await fetch(this.buildObjectUrl(path), {
             method: 'PUT',
             headers,
             body,
-            redirect: 'manual',
+            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status)) {
             const detail = await safeReadResponseText(response);
-            throw new Error(`WebDAV PUT failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+            throw new Error(`WebDAV PUT failed (${response.status} ${response.statusText}): ${detail || 'No response body'}`);
         }
 
         return response;
@@ -88,12 +98,12 @@ export class WebDAVAPI {
         const response = await fetch(this.buildObjectUrl(path), {
             method: options.method || 'GET',
             headers: this.getRequestHeaders(options.headers || {}),
-            redirect: 'manual',
+            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status) && response.status !== 304) {
             const detail = await safeReadResponseText(response);
-            throw new Error(`WebDAV ${options.method || 'GET'} failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+            throw new Error(`WebDAV ${options.method || 'GET'} failed (${response.status} ${response.statusText}): ${detail || 'No response body'}`);
         }
 
         return response;
@@ -108,12 +118,12 @@ export class WebDAVAPI {
                 Destination: this.buildObjectUrl(newPath),
                 Overwrite: overwrite ? 'T' : 'F',
             }),
-            redirect: 'manual',
+            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status)) {
             const detail = await safeReadResponseText(response);
-            throw new Error(`WebDAV MOVE failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+            throw new Error(`WebDAV MOVE failed (${response.status} ${response.statusText}): ${detail || 'No response body'}`);
         }
 
         return true;
@@ -123,7 +133,7 @@ export class WebDAVAPI {
         const response = await fetch(this.buildObjectUrl(path), {
             method: 'DELETE',
             headers: this.getRequestHeaders(),
-            redirect: 'manual',
+            redirect: 'follow',
         });
 
         // DELETE is idempotent for app semantics; a missing remote object should not block DB cleanup.
@@ -131,7 +141,7 @@ export class WebDAVAPI {
 
         if (!isSuccessStatus(response.status)) {
             const detail = await safeReadResponseText(response);
-            throw new Error(`WebDAV DELETE failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+            throw new Error(`WebDAV DELETE failed (${response.status} ${response.statusText}): ${detail || 'No response body'}`);
         }
 
         return true;

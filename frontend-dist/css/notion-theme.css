@@ -1,0 +1,565 @@
+/* ==========================================================================
+   Notion Minimalist & High-Texture Theme for CloudFlare-ImgBed (Sanyue ImgHub)
+   Inspired by Notion Workspace & Notion Personal Blog Design System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* --- Notion Design Tokens --- */
+:root {
+  /* Canvas & Backgrounds */
+  --bg-color: #f7f6f3 !important;
+  --el-bg-color-page: #f7f6f3 !important;
+  --admin-container-bg-color: #f7f6f3 !important;
+  --glass-bg: rgba(255, 255, 255, 0.88) !important;
+  --glass-header-bg: rgba(247, 246, 243, 0.85) !important;
+  --glass-border: #e9e9e8 !important;
+  --glass-border-hover: #d3d1cb !important;
+  --glass-shadow: 0 1px 2px rgba(15, 15, 15, 0.04), 0 0 0 1px rgba(15, 15, 15, 0.03) !important;
+  --glass-backdrop-blur: 16px !important;
+
+  /* Typography & Colors */
+  --notion-font: "Inter", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+  --notion-mono: "JetBrains Mono", Menlo, Monaco, Consolas, monospace !important;
+  --el-text-color-primary: #37352f !important;
+  --el-text-color-regular: #4f4d46 !important;
+  --el-text-color-secondary: #787774 !important;
+  --el-text-color-placeholder: #9b9a97 !important;
+  --text-color: #37352f !important;
+  --text-color-secondary: #787774 !important;
+  --admin-container-color: #37352f !important;
+  --upload-text-color: #787774 !important;
+  --upload-header-color: #37352f !important;
+  --upload-main-title-color: #37352f !important;
+  --login-title-color: #37352f !important;
+
+  /* Brand Accents */
+  --primary-color: #2383e2 !important;
+  --primary-color-accent: #0077d4 !important;
+  --el-color-primary: #2383e2 !important;
+  --el-color-primary-light-3: #5297ff !important;
+  --el-color-primary-light-5: #85b7ff !important;
+  --el-color-primary-light-7: #c2dcff !important;
+  --el-color-primary-light-8: #e0eeff !important;
+  --el-color-primary-light-9: #f0f7ff !important;
+  --el-color-primary-dark-2: #1b6ac9 !important;
+
+  /* Cards & Surface */
+  --popper-bg-color: #ffffff !important;
+  --el-fill-color-blank: #ffffff !important;
+  --el-fill-color: #f1f1ef !important;
+  --el-fill-color-light: #f7f6f3 !important;
+  --el-fill-color-lighter: #fafaf9 !important;
+  --el-border-color: #e9e9e8 !important;
+  --el-border-color-light: #e9e9e8 !important;
+  --el-border-color-lighter: #f1f1ef !important;
+  --el-border-radius-base: 8px !important;
+  --el-border-radius-small: 6px !important;
+
+  /* Upload Dragger Zone */
+  --el-upload-dragger-bg-color: #ffffff !important;
+  --el-upload-dragger-border: 1.5px dashed #d3d1cb !important;
+  --el-upload-dragger-uniform-color: #2383e2 !important;
+  --el-icon--upload-color: #787774 !important;
+  --upload-card-effect-color: transparent !important;
+  --upload-card-effect-highlight-color: transparent !important;
+  --upload-card-hover-glow-bg: none !important;
+  --upload-title-underline-bg: #37352f !important;
+
+  /* List & Action Buttons */
+  --file-name-bg: #f1f1ef !important;
+  --file-name-border: #e9e9e8 !important;
+  --file-name-hover-bg: #ebeae6 !important;
+  --upload-list-item-border-color: #e9e9e8 !important;
+  --upload-list-item-hover-border: #d3d1cb !important;
+  --modern-action-group-bg: #f1f1ef !important;
+  --modern-action-group-border: #e9e9e8 !important;
+  --upload-action-btn-bg: transparent !important;
+  --upload-action-btn-color: #787774 !important;
+  --upload-action-btn-hover-bg: #f1f1ef !important;
+  --upload-action-copy-color: #2383e2 !important;
+  --upload-action-danger-color: #eb5757 !important;
+  --upload-action-danger-hover-bg: #fee8e8 !important;
+
+  /* Header, Footer & Modals */
+  --toolbar-button-bg-color: #ffffff !important;
+  --toolbar-button-color: #37352f !important;
+  --page-footer-text-color: #9b9a97 !important;
+  --page-footer-name-color: #37352f !important;
+  --password-input-bg-color: #ffffff !important;
+  --dialog-bg-color: #ffffff !important;
+  --dialog-surface-bg-color: rgba(255, 255, 255, 0.95) !important;
+  --dialog-section-bg-color: #f7f6f3 !important;
+  --dialog-control-bg-color: #ffffff !important;
+  --tabs-switcher-current-bg: #f1f1ef !important;
+  --tabs-switcher-current-border-color: #d3d1cb !important;
+  --tabs-switcher-current-color: #37352f !important;
+  --tabs-switcher-hover-bg: #f7f6f3 !important;
+  --tabs-switcher-border-color: #e9e9e8 !important;
+  --admin-dashborad-stats-bg-color: #ffffff !important;
+  --admin-dashboard-btn-bg-color: #ffffff !important;
+  --admin-dashboard-btn-color: #37352f !important;
+  --admin-dashboard-imgcard-bg-color: #ffffff !important;
+  --theme-toggle-color: #37352f !important;
+  --theme-toggle-bg-color: #37352f !important;
+}
+
+/* --- Notion Dark Mode --- */
+.dark, html.dark {
+  /* Canvas & Backgrounds */
+  --bg-color: #191919 !important;
+  --el-bg-color-page: #191919 !important;
+  --admin-container-bg-color: #191919 !important;
+  --glass-bg: rgba(32, 32, 32, 0.92) !important;
+  --glass-header-bg: rgba(25, 25, 25, 0.88) !important;
+  --glass-border: #2e2e2e !important;
+  --glass-border-hover: #444444 !important;
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+
+  /* Typography & Colors */
+  --el-text-color-primary: #ffffff !important;
+  --el-text-color-regular: #d4d4d4 !important;
+  --el-text-color-secondary: #9b9a97 !important;
+  --el-text-color-placeholder: #6b6b6b !important;
+  --text-color: #ffffff !important;
+  --text-color-secondary: #9b9a97 !important;
+  --admin-container-color: #ffffff !important;
+  --upload-text-color: #9b9a97 !important;
+  --upload-header-color: #ffffff !important;
+  --upload-main-title-color: #ffffff !important;
+  --login-title-color: #ffffff !important;
+
+  /* Brand Accents */
+  --primary-color: #5297ff !important;
+  --primary-color-accent: #337ea9 !important;
+  --el-color-primary: #5297ff !important;
+  --el-color-primary-light-3: #70abff !important;
+  --el-color-primary-light-5: #3f689e !important;
+  --el-color-primary-light-7: #2a4365 !important;
+  --el-color-primary-light-8: #1e2e45 !important;
+  --el-color-primary-light-9: #141d2c !important;
+  --el-color-primary-dark-2: #337ea9 !important;
+
+  /* Cards & Surface */
+  --popper-bg-color: #202020 !important;
+  --el-fill-color-blank: #202020 !important;
+  --el-fill-color: #2b2b2b !important;
+  --el-fill-color-light: #252525 !important;
+  --el-fill-color-lighter: #1f1f1f !important;
+  --el-border-color: #2e2e2e !important;
+  --el-border-color-light: #2e2e2e !important;
+  --el-border-color-lighter: #282828 !important;
+
+  /* Upload Dragger Zone */
+  --el-upload-dragger-bg-color: #202020 !important;
+  --el-upload-dragger-border: 1.5px dashed #3a3a3a !important;
+  --el-upload-dragger-uniform-color: #5297ff !important;
+  --el-icon--upload-color: #9b9a97 !important;
+  --upload-title-underline-bg: #5297ff !important;
+
+  /* List & Action Buttons */
+  --file-name-bg: #2b2b2b !important;
+  --file-name-border: #333333 !important;
+  --file-name-hover-bg: #383838 !important;
+  --upload-list-item-border-color: #2e2e2e !important;
+  --upload-list-item-hover-border: #444444 !important;
+  --modern-action-group-bg: #252525 !important;
+  --modern-action-group-border: #2e2e2e !important;
+  --upload-action-btn-color: #9b9a97 !important;
+  --upload-action-btn-hover-bg: #2f2f2f !important;
+  --upload-action-danger-color: #ff6b6b !important;
+  --upload-action-danger-hover-bg: rgba(255, 107, 107, 0.15) !important;
+
+  /* Header, Footer & Modals */
+  --toolbar-button-bg-color: #202020 !important;
+  --toolbar-button-color: #ffffff !important;
+  --page-footer-text-color: #787774 !important;
+  --page-footer-name-color: #ffffff !important;
+  --password-input-bg-color: #202020 !important;
+  --dialog-bg-color: #202020 !important;
+  --dialog-surface-bg-color: rgba(32, 32, 32, 0.95) !important;
+  --dialog-section-bg-color: #191919 !important;
+  --dialog-control-bg-color: #252525 !important;
+  --tabs-switcher-current-bg: #2b2b2b !important;
+  --tabs-switcher-current-border-color: #444444 !important;
+  --tabs-switcher-current-color: #ffffff !important;
+  --tabs-switcher-hover-bg: #252525 !important;
+  --tabs-switcher-border-color: #2e2e2e !important;
+  --admin-dashborad-stats-bg-color: #202020 !important;
+  --admin-dashboard-btn-bg-color: #202020 !important;
+  --admin-dashboard-btn-color: #ffffff !important;
+  --admin-dashboard-imgcard-bg-color: #202020 !important;
+  --theme-toggle-color: #ffffff !important;
+  --theme-toggle-bg-color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Global Base Styling & Notion Typography
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body, html, #app {
+  font-family: var(--notion-font) !important;
+  background-color: var(--bg-color) !important;
+  color: var(--el-text-color-primary) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+/* Notion Micro Scrollbar */
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  display: block !important;
+}
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+  background: #d3d1cb !important;
+  border-radius: 9999px !important;
+}
+.dark ::-webkit-scrollbar-thumb, html.dark ::-webkit-scrollbar-thumb {
+  background: #373737 !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9b9a97 !important;
+}
+
+/* ==========================================================================
+   Header & Notion Nav Bar
+   ========================================================================== */
+
+.admin-header-content,
+.header {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--glass-shadow) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Notion Header Icons & Theme Switcher */
+#themeToggle,
+.language-switcher,
+.toggle-dark {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  color: var(--el-text-color-primary) !important;
+}
+#themeToggle:hover,
+.language-switcher:hover,
+.toggle-dark:hover {
+  background: var(--el-fill-color) !important;
+  border-color: var(--glass-border-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   Upload Area & Dropzone (Refined Notion Block Aesthetic)
+   ========================================================================== */
+
+.el-upload-dragger {
+  background-color: var(--el-upload-dragger-bg-color) !important;
+  border: var(--el-upload-dragger-border) !important;
+  border-radius: 12px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: var(--glass-shadow) !important;
+  padding: 36px 20px !important;
+}
+
+.el-upload-dragger:hover {
+  border-color: var(--primary-color) !important;
+  background-color: var(--el-fill-color-light) !important;
+  box-shadow: 0 4px 12px rgba(15, 15, 15, 0.06) !important;
+  transform: translateY(-2px) !important;
+}
+
+.el-upload-dragger.is-dragover {
+  background-color: var(--el-color-primary-light-9) !important;
+  border-color: var(--primary-color) !important;
+  border-style: solid !important;
+}
+
+.el-upload-dragger .el-icon--upload {
+  font-size: 48px !important;
+  color: var(--el-text-color-secondary) !important;
+  margin-bottom: 12px !important;
+  transition: transform 0.25s ease, color 0.25s ease !important;
+}
+
+.el-upload-dragger:hover .el-icon--upload {
+  color: var(--primary-color) !important;
+  transform: translateY(-3px) !important;
+}
+
+.el-upload-dragger .el-upload__text {
+  font-family: var(--notion-font) !important;
+  font-size: 14px !important;
+  color: var(--el-text-color-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.el-upload-dragger .el-upload__text em {
+  color: var(--primary-color) !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  border-bottom: 1px dashed var(--primary-color) !important;
+  padding-bottom: 1px !important;
+}
+
+/* Upload Card Container */
+.upload-card,
+.upload-list-card,
+.main-table,
+.overview-card,
+.chart-card,
+.action-card {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  background: var(--glass-bg) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+}
+
+/* ==========================================================================
+   Uploaded Files List (Notion Database Row Style)
+   ========================================================================== */
+
+.upload-list-item {
+  border: 1px solid var(--upload-list-item-border-color) !important;
+  border-radius: 10px !important;
+  background: var(--el-fill-color-blank) !important;
+  box-shadow: var(--glass-shadow) !important;
+  margin: 8px 0 !important;
+  padding: 10px 14px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.upload-list-item:hover {
+  border-color: var(--glass-border-hover) !important;
+  background: var(--el-fill-color-light) !important;
+  transform: translateX(2px) !important;
+}
+
+.upload-list-item-name-wrapper {
+  background: var(--file-name-bg) !important;
+  border: 1px solid var(--file-name-border) !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  font-family: var(--notion-font) !important;
+}
+
+.upload-list-item-name {
+  font-weight: 600 !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Notion URL Copy Inputs */
+.upload-list-item-url .el-input__wrapper {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 6px !important;
+  background: var(--el-fill-color-blank) !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.upload-list-item-url .el-input__wrapper:focus-within,
+.upload-list-item-url .el-input__wrapper:hover {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.15) !important;
+}
+
+.upload-list-item-url .el-input__inner {
+  font-family: var(--notion-mono) !important;
+  font-size: 12px !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+.upload-list-item-url .el-input-group__prepend {
+  background: var(--el-fill-color) !important;
+  color: var(--el-text-color-secondary) !important;
+  border-right: 1px solid var(--glass-border) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ==========================================================================
+   Notion Buttons & UI Elements
+   ========================================================================== */
+
+.el-button,
+.submit,
+.action-btn,
+.primary-btn,
+.secondary-btn {
+  font-family: var(--notion-font) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-button--primary,
+.submit,
+.primary-btn {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(35, 131, 226, 0.2) !important;
+}
+
+.el-button--primary:hover,
+.submit:hover,
+.primary-btn:hover {
+  background-color: var(--primary-color-accent) !important;
+  border-color: var(--primary-color-accent) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(35, 131, 226, 0.3) !important;
+}
+
+.el-button--default,
+.secondary-btn {
+  background-color: var(--el-fill-color-blank) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+.el-button--default:hover,
+.secondary-btn:hover {
+  background-color: var(--el-fill-color) !important;
+  border-color: var(--glass-border-hover) !important;
+  color: var(--el-text-color-primary) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   Login Modal & Dialogs (Notion Clean Slate Look)
+   ========================================================================== */
+
+.login-title {
+  font-family: var(--notion-font) !important;
+  font-weight: 700 !important;
+  font-size: 1.8rem !important;
+  letter-spacing: -0.02em !important;
+  color: var(--login-title-color) !important;
+  text-shadow: none !important;
+}
+
+.login-container {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 20px rgba(15, 15, 15, 0.08), 0 0 0 1px rgba(15, 15, 15, 0.04) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.password-input .el-input__wrapper {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  background: var(--password-input-bg-color) !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.password-input .el-input__wrapper:focus-within {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(35, 131, 226, 0.15) !important;
+}
+
+.password-input .el-input__inner {
+  font-family: var(--notion-font) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Modals & Message Boxes */
+.el-dialog,
+.el-message-box {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  background: var(--dialog-surface-bg-color) !important;
+  box-shadow: 0 8px 32px rgba(15, 15, 15, 0.12), 0 0 0 1px rgba(15, 15, 15, 0.05) !important;
+}
+
+/* ==========================================================================
+   Notion Badges, Pills & Tabs
+   ========================================================================== */
+
+.el-tag {
+  font-family: var(--notion-font) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  padding: 2px 8px !important;
+}
+
+.page-option.is-current {
+  background: var(--tabs-switcher-current-bg) !important;
+  border: 1px solid var(--tabs-switcher-current-border-color) !important;
+  color: var(--tabs-switcher-current-color) !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.page-option:hover {
+  background: var(--tabs-switcher-hover-bg) !important;
+  border-radius: 8px !important;
+}
+
+/* Sidebar Navigation */
+.sidebar-container {
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.menu-item {
+  border-radius: 6px !important;
+  color: var(--el-text-color-regular) !important;
+  font-weight: 500 !important;
+}
+
+.menu-item:hover {
+  background: var(--el-fill-color) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+.menu-item.is-active {
+  background: var(--el-fill-color) !important;
+  color: var(--primary-color) !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   Footer Styling (Clean Notion Footnote)
+   ========================================================================== */
+
+.page-footer {
+  font-family: var(--notion-font) !important;
+  font-size: 13px !important;
+  color: var(--page-footer-text-color) !important;
+  letter-spacing: 0 !important;
+  margin-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+.footer-name {
+  color: var(--page-footer-name-color) !important;
+  font-weight: 600 !important;
+}
+
+.footer-name::after {
+  background-color: var(--page-footer-name-color) !important;
+}
