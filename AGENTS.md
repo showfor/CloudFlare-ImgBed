@@ -17,4 +17,6 @@
 ## 红线
 - **不要修改上游跟踪的文件**（工作区契约第 5 条）。本地定制必须单独 commit 存证，`git pull upstream` 前先确认本地改动清单。
 - `frontend-dist/`、`deploy/` 是上游的产物/部署目录，**不要手改**；前端改动走上游的构建流程。
-- KV/R2 绑定与账号凭据只走 `wrangler` 配置与 secret，不入库；`wrangler.toml` 里的 D1/R2 标识符不是密钥，但也别把 token 加进去。
+- 上游同步工作流 `sync-upstream.yml` 的坑（2026-10-01 记录）：
+  - `permissions:` **只接受固定 scope 列表**（`actions`/`contents`/`issues`/`pull-requests`/`security-events`…）。写入不存在的键（例如 `workflows`）会让 GitHub **直接拒绝整个 workflow** —— 表现为每次推送都产生一个 0 job 的 `No jobs were run` 失败邮件，并且**每日 schedule 静默停摆**。2026-09-01 曾因此停摆整整一个月（fork 落后上游 21 个提交），2026-10-01 移除该键后恢复正常注册。
+  - `GITHUB_TOKEN` **无权推送 workflow 文件的改动**，这一点无法用 `permissions:` 授予：同步遇到上游改了 `.github/workflows/**` 就会被拒。需要时在 GitHub 页面手动 **Sync fork**，或改用带 `workflow` scope 的 PAT 存为 secret。
