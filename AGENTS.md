@@ -20,3 +20,4 @@
 - 上游同步工作流 `sync-upstream.yml` 的坑（2026-10-01 记录）：
   - `permissions:` **只接受固定 scope 列表**（`actions`/`contents`/`issues`/`pull-requests`/`security-events`…）。写入不存在的键（例如 `workflows`）会让 GitHub **直接拒绝整个 workflow** —— 表现为每次推送都产生一个 0 job 的 `No jobs were run` 失败邮件，并且**每日 schedule 静默停摆**。2026-09-01 曾因此停摆整整一个月（fork 落后上游 21 个提交），2026-10-01 移除该键后恢复正常注册。
   - `GITHUB_TOKEN` **无权推送 workflow 文件的改动**，这一点无法用 `permissions:` 授予：同步遇到上游改了 `.github/workflows/**` 就会被拒。需要时在 GitHub 页面手动 **Sync fork**，或改用带 `workflow` scope 的 PAT 存为 secret。
+  - `frontend-dist/index.html` **定制冲突**：本地若对 `index.html` 注入了 Notion 主题与外链，上游每次发版重新打包生成新前端 chunk hash 时，Actions 的自动 merge 必定在单行 HTML 产生内容冲突（`CONFLICT in frontend-dist/index.html`）。遇到此报错需在本地 `git fetch upstream` ➔ `git merge upstream/main` ➔ 保留最新 hash 与 Notion 定制 ➔ 提交并 `git push origin main`。
