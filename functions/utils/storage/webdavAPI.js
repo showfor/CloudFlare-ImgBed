@@ -52,11 +52,11 @@ export class WebDAVAPI {
         let currentPath = '';
         for (const part of dirParts) {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
+            // 本地保留的容错：MKCOL 失败或异常只告警、不中断后续 PUT 流程
             try {
-                const response = await fetch(this.buildObjectUrl(currentPath), {
+                const response = await davFetch(this.buildObjectUrl(currentPath), {
                     method: 'MKCOL',
                     headers: this.getRequestHeaders(),
-                    redirect: 'follow',
                 });
 
                 // 200/201/204 = created, 405 = collection already exists, 301/409/403 = ignore and attempt PUT
@@ -72,6 +72,7 @@ export class WebDAVAPI {
     async putFile(path, body, contentType = '') {
         await this.ensureDirectory(path);
 
+        // 本地保留：部分 WebDAV 服务端要求 PUT 显式携带 Content-Length
         const extraHeaders = {};
         if (contentType) extraHeaders['Content-Type'] = contentType;
         if (body && typeof body.size === 'number') {
@@ -79,11 +80,10 @@ export class WebDAVAPI {
         }
 
         const headers = this.getRequestHeaders(extraHeaders);
-        const response = await fetch(this.buildObjectUrl(path), {
+        const response = await davFetch(this.buildObjectUrl(path), {
             method: 'PUT',
             headers,
             body,
-            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status)) {
@@ -95,10 +95,9 @@ export class WebDAVAPI {
     }
 
     async getFile(path, options = {}) {
-        const response = await fetch(this.buildObjectUrl(path), {
+        const response = await davFetch(this.buildObjectUrl(path), {
             method: options.method || 'GET',
             headers: this.getRequestHeaders(options.headers || {}),
-            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status) && response.status !== 304) {
@@ -112,13 +111,12 @@ export class WebDAVAPI {
     async moveFile(oldPath, newPath, overwrite = true) {
         await this.ensureDirectory(newPath);
 
-        const response = await fetch(this.buildObjectUrl(oldPath), {
+        const response = await davFetch(this.buildObjectUrl(oldPath), {
             method: 'MOVE',
             headers: this.getRequestHeaders({
                 Destination: this.buildObjectUrl(newPath),
                 Overwrite: overwrite ? 'T' : 'F',
             }),
-            redirect: 'follow',
         });
 
         if (!isSuccessStatus(response.status)) {
@@ -130,10 +128,9 @@ export class WebDAVAPI {
     }
 
     async deleteFile(path) {
-        const response = await fetch(this.buildObjectUrl(path), {
+        const response = await davFetch(this.buildObjectUrl(path), {
             method: 'DELETE',
             headers: this.getRequestHeaders(),
-            redirect: 'follow',
         });
 
         // DELETE is idempotent for app semantics; a missing remote object should not block DB cleanup.
@@ -218,6 +215,66 @@ function normalizeHeaders(headers) {
     }
 
     return {};
+}
+
+/* ========== 重定向处理 ========== */
+
+// WebDAV 服务端返回 3xx 是常见行为，而非异常：反向代理的 http→https 跳转、
+// OpenList/AList 的 /dav 前缀与尾斜杠规范化、部分网盘驱动的预签名上传跳转。
+// 若按 2xx 严格判定，putFile 会在远端已写入成功后抛错，导致数据库与索引均未更新。
+const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
+const MAX_REDIRECTS = 5;
+const SENSITIVE_HEADERS = ['authorization', 'proxy-authorization', 'cookie'];
+
+/**
+ * 手动跟随 3xx：保留请求方法与请求体，跨主机时剥离认证信息。
+ *
+ * 不使用 fetch 的自动跟随，是为了在每一跳都重新校验目标主机，
+ * 避免被服务端重定向带到任意第三方地址并泄露 Basic 凭据。
+ */
+async function davFetch(url, init, depth = 0) {
+    const response = await fetch(url, { ...init, redirect: 'manual' });
+
+    if (!REDIRECT_STATUS.has(response.status) || depth >= MAX_REDIRECTS) {
+        return response;
+    }
+
+    const location = response.headers.get('Location');
+    if (!location) return response;
+
+    let nextUrl;
+    try {
+        nextUrl = new URL(location, url);
+    } catch {
+        return response;
+    }
+
+    if (nextUrl.protocol !== 'http:' && nextUrl.protocol !== 'https:') {
+        return response;
+    }
+
+    const body = init.body;
+    // 请求体无法重放（ReadableStream）时放弃跟随，交由调用方处理原响应
+    if (body && typeof body.getReader === 'function') {
+        return response;
+    }
+
+    try { await response.body?.cancel(); } catch { /* 忽略释放失败 */ }
+
+    const method = String(init.method || 'GET').toUpperCase();
+    // 303 语义要求改为 GET；301/302/307/308 保留原方法，否则 PUT 会被降级成 GET
+    const nextMethod = response.status === 303 ? 'GET' : method;
+    const nextBody = nextMethod === method ? body : undefined;
+
+    const headers = new Headers(init.headers || {});
+    // 仅比较 host（含端口），使同主机的 http→https 跳转仍能保留认证
+    if (nextUrl.host !== new URL(url).host) {
+        for (const name of SENSITIVE_HEADERS) {
+            headers.delete(name);
+        }
+    }
+
+    return davFetch(nextUrl, { ...init, method: nextMethod, headers, body: nextBody }, depth + 1);
 }
 
 function isSuccessStatus(status) {
