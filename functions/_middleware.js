@@ -1,13 +1,11 @@
-/**
- * Root Middleware for Cloudflare Pages Functions
- * 
- * 动态为前端 HTML 注入 Notion 主题样式与字体，避免直接修改 frontend-dist/index.html
- * 从而使 upstream 每日定时同步（sync-upstream）保持 0 冲突。
- */
-
+// 自定义适配器通过请求上下文声明平台；Pages 使用原生 Functions 入口。
+// 覆盖同名环境变量，避免用户配置将 Pages/Workers 误判为 Node。
 export async function onRequest(context) {
+    const runtime = context.data.serverRuntime;
+    context.env.SERVER_RUNTIME = runtime === 'node' || runtime === 'worker' ? runtime : 'pages';
+
     const response = await context.next();
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = response?.headers?.get?.('content-type') || '';
 
     if (contentType.includes('text/html') && typeof HTMLRewriter !== 'undefined') {
         return new HTMLRewriter()

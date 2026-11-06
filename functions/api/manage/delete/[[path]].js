@@ -3,6 +3,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { purgeCFCache, purgeRandomFileListCache, purgePublicFileListCache } from "../../../utils/purgeCache";
 import { removeFileFromIndex, batchRemoveFilesFromIndex } from "../../../utils/indexManager.js";
 import { getDatabase } from '../../../utils/databaseAdapter.js';
+import { buildExpiryMarkerKey, getExpiresAt, isMissingRecord } from '../../../utils/fileExpiryHelpers.js';
 import { DiscordAPI } from '../../../utils/storage/discordAPI.js';
 import { HuggingFaceAPI } from '../../../utils/storage/huggingfaceAPI.js';
 import { WebDAVAPI } from '../../../utils/storage/webdavAPI.js';
@@ -63,7 +64,7 @@ export async function onRequest(context) {
                     const success = !!(result && result.deleted);
                     details.push({ fileId, success, existed: !!result?.existed, error: success ? '' : 'Delete file failed' });
                     if (success) {
-                        // deleted 保留原有幂等成功语义，missing/details 区分记录是否原本存在。
+                        // 记录不存在也计入 deleted，由 missing/details 标识。
                         deletedFiles.push(fileId);
                         if (!result.existed) missingFiles.push(fileId);
                     } else {
@@ -117,14 +118,14 @@ export async function onRequest(context) {
         if (!result || !result.deleted) {
             throw new Error('Delete file failed');
         } else {
-            // 从索引中删除文件（无条件:记录不存在时索引也可能有残留条目,保持既有清理行为）
+            // 记录不存在时也可能有残留索引，因此仍需清理。
             waitUntil(removeFileFromIndex(context, fileId));
         }
 
         return new Response(JSON.stringify({
             success: true,
             fileId: fileId,
-            // 兼容说明:保持 200 + success:true 的幂等语义;existed 供调用方区分"实际删除"与"记录原本不存在"
+            // 请求成功不代表记录曾存在，existed 用于区分这两种情况。
             existed: result.existed
         }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -140,6 +141,39 @@ export async function onRequest(context) {
     }
 }
 
+// 按渠道删除存储中的文件对象，不处理数据库记录；返回 false 表示渠道删除失败
+// 有效期清理先删除存储、再按条件删除记录，并据返回值决定是否保留记录重试，因此单独导出
+export async function deleteStoredFile(env, fileId, img) {
+    // 如果是R2渠道的图片，需要删除R2中对应的图片
+    if (img.metadata?.Channel === 'CloudflareR2') {
+        const R2DataBase = env.img_r2;
+        await R2DataBase.delete(fileId);
+    }
+
+    // S3 渠道的图片，需要删除S3中对应的图片
+    if (img.metadata?.Channel === 'S3') {
+        return await deleteS3File(env, img);
+    }
+
+    // Discord 渠道的图片，需要删除 Discord 中对应的消息
+    if (img.metadata?.Channel === 'Discord') {
+        return await deleteDiscordFile(env, img);
+    }
+
+    // HuggingFace 渠道的图片，需要删除 HuggingFace 中对应的文件
+    if (img.metadata?.Channel === 'HuggingFace') {
+        return await deleteHuggingFaceFile(env, img);
+    }
+
+    // WebDAV 渠道的图片，需要删除 WebDAV 中对应的文件
+    if (img.metadata?.Channel === 'WebDAV') {
+        return await deleteWebDAVFile(env, img);
+    }
+
+    // R2 删除失败会抛出；Telegram、外链等渠道只删除记录
+    return true;
+}
+
 // 删除单个文件的核心函数
 export async function deleteFile(env, fileId, cdnUrl, url) {
     try {
@@ -148,40 +182,28 @@ export async function deleteFile(env, fileId, cdnUrl, url) {
         const img = await db.getWithMetadata(fileId);
 
         // 如果文件记录不存在，直接返回成功（幂等删除），标记 existed=false 供调用方区分
-        if (!img) {
+        if (isMissingRecord(img)) {
             console.warn(`File ${fileId} not found in database, skipping delete`);
             return { deleted: true, existed: false };
         }
 
-        // 如果是R2渠道的图片，需要删除R2中对应的图片
-        if (img.metadata?.Channel === 'CloudflareR2') {
-            const R2DataBase = env.img_r2;
-            await R2DataBase.delete(fileId);
-        }
-
-        // S3 渠道的图片，需要删除S3中对应的图片
-        if (img.metadata?.Channel === 'S3') {
-            await deleteS3File(env, img);
-        }
-
-        // Discord 渠道的图片，需要删除 Discord 中对应的消息
-        if (img.metadata?.Channel === 'Discord') {
-            await deleteDiscordFile(env, img);
-        }
-
-        // HuggingFace 渠道的图片，需要删除 HuggingFace 中对应的文件
-        if (img.metadata?.Channel === 'HuggingFace') {
-            await deleteHuggingFaceFile(env, img);
-        }
-
-        // WebDAV 渠道的图片，需要删除 WebDAV 中对应的文件
-        if (img.metadata?.Channel === 'WebDAV') {
-            await deleteWebDAVFile(env, img);
+        if (!await deleteStoredFile(env, fileId, img)) {
+            throw new Error('storage channel reported a failed deletion');
         }
 
         // 删除数据库中的记录
         // 注意：容量统计现在由索引自动维护，删除文件后索引更新时会自动重新计算
         await db.delete(fileId);
+
+        const expiresAt = getExpiresAt(img.metadata);
+        if (expiresAt !== null && typeof db.listExpiredFiles !== 'function') {
+            try {
+                await db.delete(buildExpiryMarkerKey(expiresAt, fileId));
+            } catch (error) {
+                // 文件已删除；残留标记由后续清理任务重试移除。
+                console.warn('Failed to remove deleted file expiry marker:', error);
+            }
+        }
 
         // 清除CDN缓存
         await purgeCFCache(env, cdnUrl);
